@@ -2,6 +2,12 @@
 name = "torrex"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "Bendy based parsing structures for BitTorrent files"
+repository = "https://github.com/Ryder-C/torrex"
+readme = "README.md"
+keywords = ["bittorrent", "deserialization", "bencode"]
+categories = ["encoding"]
 
 [dependencies]
 bendy = "0.3.3"
