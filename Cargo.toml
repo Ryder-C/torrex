@@ -8,6 +8,7 @@ repository = "https://github.com/Ryder-C/torrex"
 readme = "README.md"
 keywords = ["bittorrent", "deserialization", "bencode"]
 categories = ["encoding"]
+exclude = ["test_data/*"]
 
 [dependencies]
 bendy = "0.3.3"
