@@ -21,6 +21,8 @@ pub struct Info {
     pub name: String,
     pub files: Vec<File>,
     pub hash: [u8; 20],
+    pub piece_length: u32,
+    pub pieces: Vec<[u8; 20]>,
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -104,15 +106,39 @@ impl FromBencode for Info {
         let mut length = None;
         let mut md5sum = None;
 
+        let mut piece_length = None;
+        let mut pieces_raw = None;
+
         let mut dict = object.try_into_dictionary()?;
         while let Some(pair) = dict.next_pair()? {
             match pair {
+                (b"piece length", value) => piece_length = Some(u32::decode_bencode_object(value)?),
+                (b"pieces", value) => pieces_raw = Some(Vec::decode_bencode_object(value)?),
                 (b"name", value) => name = Some(String::decode_bencode_object(value)?),
                 (b"files", value) => files = Some(Vec::decode_bencode_object(value)?),
                 (b"length", value) => length = Some(u64::decode_bencode_object(value)?),
                 (b"md5sum", value) => md5sum = Some(String::decode_bencode_object(value)?),
                 _ => {}
             }
+        }
+
+        if piece_length.is_none() || pieces_raw.is_none() {
+            return Err(bendy::decoding::Error::missing_field(
+                "piece length or pieces",
+            ));
+        }
+        let pl = piece_length.unwrap();
+        let raw = pieces_raw.unwrap();
+        if raw.len() % 20 != 0 {
+            return Err(bendy::decoding::Error::missing_field(
+                "Invalid length for pieces",
+            ));
+        }
+        let mut pieces = vec![];
+        for chunk in raw.chunks_exact(20) {
+            let mut arr = [0u8; 20];
+            arr.copy_from_slice(chunk);
+            pieces.push(arr);
         }
 
         let mut hasher = Sha1::new();
@@ -122,7 +148,13 @@ impl FromBencode for Info {
         let name = name.expect("Decoding Error: Missing name from torrent info");
 
         if let Some(files) = files {
-            Ok(Self { name, files, hash })
+            Ok(Self {
+                name,
+                files,
+                hash,
+                piece_length: pl,
+                pieces,
+            })
         } else {
             Ok(Self {
                 name,
@@ -132,6 +164,8 @@ impl FromBencode for Info {
                     path: PathBuf::new(),
                 }],
                 hash,
+                piece_length: pl,
+                pieces,
             })
         }
     }
