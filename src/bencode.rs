@@ -113,7 +113,7 @@ impl FromBencode for Info {
         while let Some(pair) = dict.next_pair()? {
             match pair {
                 (b"piece length", value) => piece_length = Some(u32::decode_bencode_object(value)?),
-                (b"pieces", value) => pieces_raw = Some(Vec::decode_bencode_object(value)?),
+                (b"pieces", value) => pieces_raw = Some(value.try_into_bytes()?.to_vec()),
                 (b"name", value) => name = Some(String::decode_bencode_object(value)?),
                 (b"files", value) => files = Some(Vec::decode_bencode_object(value)?),
                 (b"length", value) => length = Some(u64::decode_bencode_object(value)?),
@@ -156,12 +156,13 @@ impl FromBencode for Info {
                 pieces,
             })
         } else {
+            // single-file torrent: use the name as the file path
             Ok(Self {
-                name,
+                name: name.clone(),
                 files: vec![File {
                     length: length.expect("Decoding Error: Missing file length"),
                     md5sum,
-                    path: PathBuf::new(),
+                    path: PathBuf::from(name.clone()),
                 }],
                 hash,
                 piece_length: pl,

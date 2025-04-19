@@ -8,7 +8,7 @@ mod tests {
     use std::{path::PathBuf, str::FromStr};
 
     #[test]
-    fn test_ubuntu_torrent_decoding() {
+    fn test_torrent_decoding_v1() {
         // Test the decoding of a basic torrent file
         let torrent_path = "test_data/ubuntu.torrent";
         let torrent = Torrent::new(torrent_path);
@@ -17,34 +17,37 @@ mod tests {
         let torrent = torrent.unwrap();
         assert_eq!(
             torrent.info.name,
-            "ubuntu-24.04.1-desktop-amd64.iso".to_owned(),
+            "ubuntu-24.04.2-desktop-amd64.iso".to_owned(),
             "Failed to decode name"
         );
         assert_eq!(
             torrent.info.files,
             vec![File {
-                length: 6203355136,
+                length: 6343219200,
                 md5sum: None,
-                path: PathBuf::from(""),
+                path: PathBuf::from("ubuntu-24.04.2-desktop-amd64.iso"),
             }],
             "Failed to decode files"
         );
         assert_eq!(
             torrent.info.hash,
-            [74, 63, 94, 8, 188, 239, 130, 87, 24, 237, 163, 6, 55, 35, 5, 133, 227, 51, 5, 153,],
+            [97, 31, 112, 137, 157, 78, 29, 106, 156, 57, 207, 201, 37, 241, 3, 223, 239, 99, 3, 40],
             "Failed to compute correct hash"
         );
-        assert_eq!(
-            torrent.announce_list,
-            vec![
+        {
+            use std::collections::HashSet;
+            let got: HashSet<String> = torrent.announce_list.into_iter().collect();
+            let expected: HashSet<String> = [
                 "https://ipv6.torrent.ubuntu.com/announce".to_owned(),
-                "https://torrent.ubuntu.com/announce".to_owned()
-            ],
-            "Failed to decode announce urls"
-        );
+                "https://torrent.ubuntu.com/announce".to_owned(),
+            ]
+            .into_iter()
+            .collect();
+            assert_eq!(got, expected, "Failed to decode announce urls");
+        }
         assert_eq!(
             torrent.creation_date,
-            Some(DateTime::from_str("2024-08-29T09:03:35-07:00").unwrap()),
+            Some(DateTime::from_str("2025-02-20T04:24:49-08:00").unwrap()),
             "Failed to decode creation date"
         );
         assert_eq!(
